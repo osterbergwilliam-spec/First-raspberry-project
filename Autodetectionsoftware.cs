@@ -15,7 +15,7 @@ namespace SmartLockSystem
         public double Proximity { get; set; }
         public double Value { get; set; }
         public int FaceCount { get; set; }
-        public string PersonName { get; set; }
+        public string? PersonName { get; set; }
         public bool IsAuthorized { get; set; }
     }
 
