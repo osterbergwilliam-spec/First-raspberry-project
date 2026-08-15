@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nya_test")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d0081d14d3a20d60ceda409b8940916f09a645cf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4fbfbca272f722c2c9489f3983da5955c7ff8b13")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nya_test")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nya_test")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

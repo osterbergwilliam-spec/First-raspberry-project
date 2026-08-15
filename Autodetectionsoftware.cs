@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,7 @@ namespace SmartLockSystem
         public double Proximity { get; set; }
         public double Value { get; set; }
         public int FaceCount { get; set; }
-        public string? PersonName { get; set; }
+        public string PersonName { get; set; } = string.Empty;
         public bool IsAuthorized { get; set; }
     }
 
@@ -76,36 +77,6 @@ namespace SmartLockSystem
     }
 
     // ==========================================
-    // FACE RECOGNITION SERVICE
-    // ==========================================
-    public class FaceRecognitionService
-    {
-        private readonly Dictionary<int, string> _knownFaces = new Dictionary<int, string>
-        {
-            { 73, "William" },    // Authorized person
-            { 10, "Stranger" }    // Unknown person
-        };
-
-        public string RecognizeFace(SystemState state)
-        {
-            if (state.FaceCount == 0)
-                return "No face detected";
-
-            if (state.FaceCount > 1)
-                return "Multiple faces detected";
-
-            // Simple recognition based on face position/size
-            // In a real system, you'd use facial recognition algorithms
-            return _knownFaces.ContainsKey((int)state.Value) ? _knownFaces[(int)state.Value] : "Unknown";
-        }
-
-        public bool IsAuthorized(string person)
-        {
-            return person == "William";
-        }
-    }
-
-    // ==========================================
     // RULE ENGINE (The Brain)
     // ==========================================
     public class LockRule
@@ -117,7 +88,6 @@ namespace SmartLockSystem
     public class LockManager
     {
         private readonly IInputProvider _inputProvider;
-        private readonly FaceRecognitionService _faceService;
         private readonly List<LockRule> _rules = new List<LockRule>();
         
         // CONFIGURATION FOR VISION SIMULATION
@@ -125,12 +95,10 @@ namespace SmartLockSystem
         private const double PresenceThreshold = 0.3;  // Someone is there
 
         private double _lastProximity = -1.0;
-        private double _lastValue = double.NaN;
 
-        public LockManager(IInputProvider inputProvider, FaceRecognitionService faceService)
+        public LockManager(IInputProvider inputProvider)
         {
             _inputProvider = inputProvider;
-            _faceService = faceService;
         }
 
         public void AddRule(double value, ILockAction action) 
@@ -139,37 +107,26 @@ namespace SmartLockSystem
         public void Update()
         {
             SystemState state = _inputProvider.GetCurrentState();
-
-            // Detection logic
+            
+            // Debug output - remove later
+            Console.WriteLine($"[DEBUG] Proximity: {state.Proximity}, FaceCount: {state.FaceCount}, PersonName: {state.PersonName}");
+            
             if (Math.Abs(state.Proximity - _lastProximity) > 0.05)
             {
-                if (state.Proximity > PresenceThreshold && state.Proximity < ScanThreshold)
+                if (state.Proximity >= 0.8 && state.FaceCount > 0)
                 {
-                    Console.WriteLine($"[VISION] Object detected... Proximity: {state.Proximity:P0}");
-                }
-                else if (state.Proximity >= ScanThreshold)
-                {
-                    Console.WriteLine($"[VISION] Face detected. Attempting to identify...");
-
-                    // Use face recognition service
-                    string person = _faceService.RecognizeFace(state);
-                    Console.WriteLine($"[RECOGNITION] {person}");
-
-                    if (_faceService.IsAuthorized(person))
+                    Console.WriteLine($"[VISION] Face detected: {state.PersonName}");
+                    
+                    if (state.IsAuthorized)
                     {
-                        Console.WriteLine("[SYSTEM] Access granted");
-                        // Trigger unlock action
+                        Console.WriteLine("[SYSTEM] Access granted - Unlocking");
                         var rule = _rules.FirstOrDefault(r => r.TriggerValue == 73);
                         rule?.Action.Execute();
                     }
                     else
                     {
-                        Console.WriteLine("[SYSTEM] Access denied");
+                        Console.WriteLine("[SYSTEM] Access denied - Lock remains engaged");
                     }
-                }
-                else if (state.Proximity <= PresenceThreshold && _lastProximity > PresenceThreshold)
-                {
-                    Console.WriteLine("[VISION] Area clear.");
                 }
                 _lastProximity = state.Proximity;
             }
@@ -185,8 +142,7 @@ namespace SmartLockSystem
         {
             string path = @"C:\Users\William\Desktop\vscode\Nya test\input.json";
             IInputProvider inputSource = new JsonInputProvider(path);
-            FaceRecognitionService faceService = new FaceRecognitionService();
-            LockManager brain = new LockManager(inputSource, faceService);
+            LockManager brain = new LockManager(inputSource);
 
             // Define rules
             brain.AddRule(73, new SimulatedAction("UNLOCK", "Deadbolt Disengaged"));
