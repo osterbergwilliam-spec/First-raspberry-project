@@ -6,6 +6,7 @@ import signal
 import sys
 import os
 import cv2
+import numpy as np
 import json
 import socket
 import base64
@@ -27,10 +28,14 @@ def is_you(face_img):
     if reference_face is None:
         return False
 
-    face_img = cv2.resize(face_img, (reference_face.shape[1], reference_face.shape[0]))
-    diff = cv2.absdiff(reference_face, face_img)
-    diff_mean = float(np.mean(diff))
-    return diff_mean < 50
+    try:
+        face_img = cv2.resize(face_img, (reference_face.shape[1], reference_face.shape[0]))
+        diff = cv2.absdiff(reference_face, face_img)
+        diff_mean = float(np.mean(diff))
+        return diff_mean < 50
+    except Exception as e:
+        print(f"Error in face comparison: {e}")
+        return False
 
 
 def handle_shutdown(signum, frame):
