@@ -1,5 +1,5 @@
-import cv2
 import json
+import cv2
 import time
 import os
 import socket
@@ -11,28 +11,32 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 # Global variables for sharing data between threads
 current_frame = None
 detection_result = {"status": "No face detected", "authorized": False}
-last_send_time = 0.0
-SEND_INTERVAL_SECONDS = 0.75
 
 class ViewerHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         global current_frame, detection_result
-
+        
         if self.path == '/status':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(detection_result).encode())
+            # Convert bool to regular Python bool for JSON
+            clean_result = {
+                "status": detection_result["status"],
+                "authorized": bool(detection_result["authorized"])
+            }
+            self.wfile.write(json.dumps(clean_result).encode())
         elif self.path == '/frame':
             if current_frame is not None:
                 _, buffer = cv2.imencode('.jpg', current_frame)
                 frame_bytes = base64.b64encode(buffer).decode()
-
+                
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"image": frame_bytes}).encode())
         else:
+            # Serve the HTML viewer
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
@@ -57,7 +61,7 @@ class ViewerHandler(SimpleHTTPRequestHandler):
         <div id="status" class="status no-face">Loading...</div>
         <img id="frame" src="" alt="Camera feed">
     </div>
-
+    
     <script>
         function updateStatus() {
             fetch('/status')
@@ -65,26 +69,26 @@ class ViewerHandler(SimpleHTTPRequestHandler):
                 .then(data => {
                     const statusDiv = document.getElementById('status');
                     statusDiv.textContent = data.status;
-                    statusDiv.className = 'status ' +
-                        (data.authorized ? 'authorized' :
+                    statusDiv.className = 'status ' + 
+                        (data.authorized ? 'authorized' : 
                          data.status.includes('No face') ? 'no-face' : 'unauthorized');
                 });
         }
-
+        
         function updateFrame() {
             fetch('/frame')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('frame').src =
+                    document.getElementById('frame').src = 
                         'data:image/jpeg;base64,' + data.image;
                 });
         }
-
+        
         setInterval(() => {
             updateStatus();
             updateFrame();
         }, 1000);
-
+        
         updateStatus();
         updateFrame();
     </script>
@@ -97,6 +101,7 @@ def start_server():
     server = HTTPServer(('0.0.0.0', 8080), ViewerHandler)
     server.serve_forever()
 
+# Start server thread
 server_thread = threading.Thread(target=start_server)
 server_thread.daemon = True
 server_thread.start()
@@ -109,75 +114,66 @@ if os.path.exists(reference_face_path):
     reference_face = cv2.imread(reference_face_path, cv2.IMREAD_GRAYSCALE)
     print("Reference face loaded for OpenCV recognition")
 
-
 def is_you(face_img):
     if reference_face is None:
         return False
-
+    
     face_img = cv2.resize(face_img, (reference_face.shape[1], reference_face.shape[0]))
     diff = cv2.absdiff(reference_face, face_img)
     diff_mean = np.mean(diff)
+    
     return diff_mean < 50
 
-
+# Initialize camera
 cap = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-
+# Function to send data directly to C# via socket (no JSON needed)
 def send_to_csharp(proximity, is_authorized, person_name, face_count):
-    global last_send_time
-    current_time = time.time()
-
-    if current_time - last_send_time < SEND_INTERVAL_SECONDS:
-        return True
-
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('localhost', 9999))
-            data = {
-                "Proximity": proximity,
-                "Value": 73 if is_authorized else -1,
-                "FaceCount": face_count,
-                "PersonName": person_name,
-                "IsAuthorized": is_authorized
-            }
-            s.sendall(json.dumps(data).encode())
-        last_send_time = current_time
+            # Create simple string message instead of JSON
+            message = f"{proximity},{73 if is_authorized else -1},{face_count},{person_name},{is_authorized}"
+            s.sendall(message.encode())
         return True
-    except Exception:
+    except:
         return False
-
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        time.sleep(0.5)
+        time.sleep(1)
         continue
-
+    
+    # Store current frame for web viewer
     current_frame = frame.copy()
-
+    
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
+    
     if len(faces) > 0 and reference_face is not None:
         x, y, w, h = faces[0]
-
-        face_size = max(w, h)
-        frame_size = max(frame.shape[0], frame.shape[1])
-        proximity = min((face_size / frame_size) * 3.0, 1.0)
-
+        
+        # Calculate proximity based on face size
+        face_width = w
+        frame_width = frame.shape[1]
+        proximity = min(face_width / frame_width * 2, 1.0)
+        
         if proximity >= 0.8:
             face_img = gray[y:y+h, x:x+w]
             is_authorized = is_you(face_img)
+            
             person_name = "William" if is_authorized else "Unknown"
-
             detection_result = {
                 "status": f"Face detected: {person_name} - {'AUTHORIZED' if is_authorized else 'UNAUTHORIZED'}",
                 "authorized": is_authorized
             }
-
-            cv2.rectangle(frame, (x, y), (x+w, y+h),
+            
+            # Draw rectangle on frame
+            cv2.rectangle(frame, (x, y), (x+w, y+h), 
                          (0, 255, 0) if is_authorized else (0, 0, 255), 2)
+            
             send_to_csharp(proximity, is_authorized, person_name, len(faces))
         else:
             is_authorized = False
@@ -186,7 +182,7 @@ while True:
                 "status": f"Face detected but too far for recognition (proximity: {proximity:.2f})",
                 "authorized": is_authorized
             }
-
+            
             cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 255, 0), 2)
             send_to_csharp(proximity, is_authorized, person_name, len(faces))
     else:
@@ -197,5 +193,5 @@ while True:
             "authorized": is_authorized
         }
         send_to_csharp(0.0, is_authorized, person_name, len(faces))
-
-    time.sleep(0.5)
+    
+    time.sleep(1)
