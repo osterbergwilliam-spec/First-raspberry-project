@@ -47,7 +47,7 @@ def start_lock_system():
 
 def start_streaming():
     global shutdown_flag
-    pc_ip = os.environ.get("OBS_PC_IP", "192.168.1.40")  # Change to the IP used by your PC for OBS streaming
+    pc_ip = os.environ.get("OBS_PC_IP", "PlaceholderIP")  # Change to the IP used by your PC for OBS streaming
 
     if pc_ip == "192.168.1.40":
         print("[STREAM] Set OBS_PC_IP to your PC IP address before streaming.")
@@ -78,7 +78,7 @@ def start_streaming():
         process.terminate()
 
 
-def wait_for_lock_socket(host="127.0.0.1", port=9999, timeout=30):
+def wait_for_lock_socket(host="placeholder ip", port=9999, timeout=30):
     deadline = time.time() + timeout
 
     while time.time() < deadline and not shutdown_flag:
