@@ -57,7 +57,7 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
-    if faces and reference_face is not None:
+    if len(faces) > 0 and reference_face is not None:
         # Get first face
         x, y, w, h = faces[0]
         
@@ -78,7 +78,7 @@ while True:
     else:
         proximity = 0.0
         is_authorized = False
-        person_name = "None" if not faces else "Unknown"
+        person_name = "None" if len(faces) == 0 else "Unknown"
     
     # Send directly to C# via socket
     send_to_csharp(proximity, is_authorized, person_name, len(faces))
