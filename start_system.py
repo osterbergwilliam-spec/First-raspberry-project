@@ -80,7 +80,7 @@ class StreamHandler(SimpleHTTPRequestHandler):
 
 def start_web_server():
     server = HTTPServer(("0.0.0.0", 8080), StreamHandler)
-    print("Web camera stream available at http://192.168.1.40:8080/stream.mjpg")
+    print("Web camera stream available at http://Replace/stream.mjpg")
     server.serve_forever()
 
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     print("Face detection: Running")
     print("Smart lock system: Running")
     print("Camera streaming: Running")
-    print("In OBS: Add Media Source -> URL -> http://192.168.1.40:8080/stream.mjpg")
+    print("In OBS: Add Media Source -> URL -> http://Replace/stream.mjpg")
 
     try:
         while not shutdown_flag:
