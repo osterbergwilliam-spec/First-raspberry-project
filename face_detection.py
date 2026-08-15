@@ -45,6 +45,7 @@ while True:
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
     if len(faces) > 0:
+        print(f"[FACE DETECTION] Face(s) detected! Count: {len(faces)}")
         x, y, w, h = faces[0]  # Use first face
         face_img = gray[y:y+h, x:x+w]
         proximity = calculate_proximity(w, frame.shape[1])
@@ -54,6 +55,7 @@ while True:
         is_authorized = (person_id == 73)
         person_name = "William" if is_authorized else "Unknown"
     else:
+        print("[FACE DETECTION] No faces detected")
         proximity = 0.0
         person_id = -1
         is_authorized = False
