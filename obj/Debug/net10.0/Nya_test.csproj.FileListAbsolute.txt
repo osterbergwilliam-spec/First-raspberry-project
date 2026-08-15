@@ -1,0 +1,14 @@
+C:\Users\William\Desktop\vscode\Nya test\bin\Debug\net10.0\Nya_test.exe
+C:\Users\William\Desktop\vscode\Nya test\bin\Debug\net10.0\Nya_test.deps.json
+C:\Users\William\Desktop\vscode\Nya test\bin\Debug\net10.0\Nya_test.runtimeconfig.json
+C:\Users\William\Desktop\vscode\Nya test\bin\Debug\net10.0\Nya_test.dll
+C:\Users\William\Desktop\vscode\Nya test\bin\Debug\net10.0\Nya_test.pdb
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.AssemblyInfoInputs.cache
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.AssemblyInfo.cs
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.csproj.CoreCompileInputs.cache
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.dll
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\refint\Nya_test.dll
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.pdb
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.genruntimeconfig.cache
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\ref\Nya_test.dll
