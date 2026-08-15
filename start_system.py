@@ -5,7 +5,6 @@ import threading
 import signal
 import sys
 import socket
-import os
 
 # Global flag for shutdown
 shutdown_flag = False
@@ -47,23 +46,12 @@ def start_lock_system():
 
 def start_streaming():
     global shutdown_flag
-    pc_ip = os.environ.get("OBS_PC_IP", "PlaceholderIP")  # Change to the IP used by your PC for OBS streaming
-
-    if pc_ip == "192.168.1.40":
-        print("[STREAM] Set OBS_PC_IP to your PC IP address before streaming.")
-        print("[STREAM] Example: OBS_PC_IP=192.168.1.40 python3 start_system.py")
-
     stream_cmd = [
         "ffmpeg",
         "-f", "v4l2",
         "-i", "/dev/video0",
-        "-f", "mpegts",
-        "-c:v", "mpeg1video",
-        "-s", "640x480",
-        "-b:v", "1000k",
-        "-bf", "0",
-        "-muxdelay", "0.001",
-        f"http://{pc_ip}:8080",
+        "-f", "flv",
+        "rtmp://localhost:1935/live/stream",
     ]
 
     process = subprocess.Popen(stream_cmd)
@@ -78,7 +66,7 @@ def start_streaming():
         process.terminate()
 
 
-def wait_for_lock_socket(host="placeholder ip", port=9999, timeout=30):
+def wait_for_lock_socket(host="127.0.0.1", port=9999, timeout=30):
     deadline = time.time() + timeout
 
     while time.time() < deadline and not shutdown_flag:
@@ -117,7 +105,8 @@ if __name__ == "__main__":
     print("All systems started!")
     print("Face detection: Running")
     print("Smart lock system: Running")
-    print(f"Camera streaming: Running (check {os.environ.get('OBS_PC_IP', 'YOUR_PC_IP')}:8080 in OBS)")
+    print("Camera streaming: Running")
+    print("In OBS: Add Media Source -> RTMP -> rtmp://YOUR_PI_IP:1935/live/stream")
 
     while (
         not shutdown_flag
