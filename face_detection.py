@@ -11,6 +11,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 # Global variables for sharing data between threads
 current_frame = None
 detection_result = {"status": "No face detected", "authorized": False}
+csharp_connection_available = True
 
 class ViewerHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -130,6 +131,8 @@ face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 # Function to send data directly to C# via socket
 def send_to_csharp(proximity, is_authorized, person_name, face_count):
+    global csharp_connection_available
+
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', 9999))
@@ -141,9 +144,14 @@ def send_to_csharp(proximity, is_authorized, person_name, face_count):
                 "IsAuthorized": is_authorized
             }
             s.sendall(json.dumps(message).encode())
+        if not csharp_connection_available:
+            print("[SOCKET] Reconnected to C# app")
+        csharp_connection_available = True
         return True
     except Exception as e:
-        print(f"[WARNING] Could not connect to C# app: {e}")
+        if csharp_connection_available:
+            print(f"[WARNING] Could not connect to C# app: {e}")
+        csharp_connection_available = False
         return False
 
 while True:
