@@ -12,19 +12,11 @@ namespace SmartLockSystem
     // ==========================================
     public class SystemState
     {
-        // 0.0 (Far/None) to 1.0 (Right in front of camera)
-        public double Proximity { get; set; } 
+        public double Proximity { get; set; }
         public double Value { get; set; }
         public int FaceCount { get; set; }
-        public List<FaceData> FaceData { get; set; } = new List<FaceData>();
-    }
-
-    public class FaceData
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int W { get; set; }
-        public int H { get; set; }
+        public string PersonName { get; set; }
+        public bool IsAuthorized { get; set; }
     }
 
     // ==========================================
