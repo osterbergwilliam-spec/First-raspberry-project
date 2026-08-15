@@ -3,11 +3,28 @@ import json
 import time
 import os
 import numpy as np
+import socket
+
+# Socket connection to C#
+def send_to_csharp(data):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(('localhost', 9999))
+            s.sendall(json.dumps(data).encode())
+            print("[SOCKET] Data sent to C# app")
+    except Exception as e:
+        print(f"[SOCKET] Connection failed, falling back to JSON: {e}")
+        # Fallback to JSON file
+        try:
+            with open('input.json', 'w') as f:
+                json.dump(data, f)
+        except Exception as e2:
+            print(f"[ERROR] Failed to write JSON: {e2}")
 
 # Load your reference face
 reference_face = None
-if os.path.exists("faces/your_face.jpg"):
-    reference_face = cv2.imread("faces/your_face.jpg", cv2.IMREAD_GRAYSCALE)
+if os.path.exists("faces/Access_face.jpg"):
+    reference_face = cv2.imread("faces/Access_face.jpg", cv2.IMREAD_GRAYSCALE)
     print("Reference face loaded")
 
 def is_you(face_img):
@@ -30,10 +47,14 @@ cap = cv2.VideoCapture(0)
 while True:
     ret, frame = cap.read()
     if not ret:
+        print("Failed to capture frame")
+        time.sleep(1)
         continue
     
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+    
+    print(f"[FACE DETECTION] Face(s) detected! Count: {len(faces)}")
     
     if len(faces) > 0:
         x, y, w, h = faces[0]
@@ -63,15 +84,17 @@ while True:
         person_name = "None"
         person_id = -1
     
+    # Create data object
     data = {
         "Proximity": proximity,
         "Value": person_id,
         "FaceCount": len(faces),
         "PersonName": person_name,
-        "IsAuthorized": is_authorized
+        "IsAuthorized": bool(is_authorized)
+
     }
     
-    with open('input.json', 'w') as f:
-        json.dump(data, f)
+    # Send via socket
+    send_to_csharp(data)
     
     time.sleep(1)

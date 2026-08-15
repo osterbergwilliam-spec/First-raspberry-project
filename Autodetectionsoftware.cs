@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -34,10 +37,7 @@ namespace SmartLockSystem
         SystemState GetCurrentState();
     }
 
-    // ==========================================
-    // SIMULATED HARDWARE ACTIONS
-    // ==========================================
-    public class SimulatedAction : ILockAction
+        public class SimulatedAction : ILockAction
     {
         private readonly string _name;
         private readonly string _description;
@@ -52,6 +52,56 @@ namespace SmartLockSystem
         public void Execute()
         {
             Console.WriteLine($"\n[HARDWARE] {ActionName}: {_description}");
+        }
+    }
+
+    // ==========================================
+    // INPUT PROVIDER (SOCKET)
+    // ==========================================
+    public class SocketInputProvider : IInputProvider
+    {
+        private readonly TcpListener _listener;
+        private SystemState _lastState = new SystemState();
+        
+        public SocketInputProvider(int port = 9999)
+        {
+            _listener = new TcpListener(IPAddress.Loopback, port);
+            _listener.Start();
+            Console.WriteLine($"[SOCKET] Listening on port {port}");
+            
+            // Start listening thread
+            new Thread(ListenForData) { IsBackground = true }.Start();
+        }
+        
+        private void ListenForData()
+        {
+            while (true)
+            {
+                try
+                {
+                    using var client = _listener.AcceptTcpClient();
+                    using var stream = client.GetStream();
+                    
+                    var buffer = new byte[1024];
+                    var bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    
+                    if (bytesRead > 0)
+                    {
+                        var json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        _lastState = JsonSerializer.Deserialize<SystemState>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new SystemState();
+                        Console.WriteLine($"[SOCKET] Data received: {json}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[SOCKET] Error: {ex.Message}");
+                }
+            }
+        }
+        
+        public SystemState GetCurrentState()
+        {
+            return _lastState;
         }
     }
 
@@ -143,8 +193,8 @@ namespace SmartLockSystem
     {
         static void Main(string[] args)
         {
-            string path = @"C:\Users\William\Desktop\vscode\Nya test\input.json";
-            IInputProvider inputSource = new JsonInputProvider(path);
+            // Use socket provider instead of JSON file
+            IInputProvider inputSource = new SocketInputProvider(9999);
             LockManager brain = new LockManager(inputSource);
 
             // Define rules
