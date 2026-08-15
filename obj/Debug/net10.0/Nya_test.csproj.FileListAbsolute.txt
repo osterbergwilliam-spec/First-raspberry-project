@@ -12,3 +12,4 @@ C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\refint\Nya_test.dll
 C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.pdb
 C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.genruntimeconfig.cache
 C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\ref\Nya_test.dll
+C:\Users\William\Desktop\vscode\Nya test\obj\Debug\net10.0\Nya_test.sourcelink.json

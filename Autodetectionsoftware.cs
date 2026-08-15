@@ -174,8 +174,6 @@ namespace SmartLockSystem
         private const double ScanThreshold = 0.8;  // Very close
         private const double PresenceThreshold = 0.3;  // Someone is there
 
-        private double _lastProximity = -1.0;
-
         public LockManager(IInputProvider inputProvider, FaceRecognitionService faceService)
         {
             _inputProvider = inputProvider;

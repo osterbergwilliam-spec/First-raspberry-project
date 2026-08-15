@@ -128,16 +128,22 @@ def is_you(face_img):
 cap = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-# Function to send data directly to C# via socket (no JSON needed)
+# Function to send data directly to C# via socket
 def send_to_csharp(proximity, is_authorized, person_name, face_count):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(('localhost', 9999))
-            # Create simple string message instead of JSON
-            message = f"{proximity},{73 if is_authorized else -1},{face_count},{person_name},{is_authorized}"
-            s.sendall(message.encode())
+            s.connect(('127.0.0.1', 9999))
+            message = {
+                "Proximity": proximity,
+                "Value": 73 if is_authorized else -1,
+                "FaceCount": face_count,
+                "PersonName": person_name,
+                "IsAuthorized": is_authorized
+            }
+            s.sendall(json.dumps(message).encode())
         return True
-    except:
+    except Exception as e:
+        print(f"[WARNING] Could not connect to C# app: {e}")
         return False
 
 while True:
