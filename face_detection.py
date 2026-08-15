@@ -60,16 +60,20 @@ while True:
     if len(faces) > 0 and reference_face is not None:
         # Get first face
         x, y, w, h = faces[0]
-        
-        # Calculate proximity based on face size
-        face_width = w
-        frame_width = frame.shape[1]
-        proximity = min(face_width / frame_width * 2, 1.0)
-        
-        if proximity >= 0.8:  # Close enough for recognition
+
+        # Use a more stable size estimate based on the largest detected face dimension.
+        # This keeps the value in a 0.0-1.0 range and makes recognition trigger more
+        # consistently as the user moves closer to the camera.
+        face_size = max(w, h)
+        frame_size = max(frame.shape[0], frame.shape[1])
+        proximity = min((face_size / frame_size) * 3.0, 1.0)
+
+        print(f"Face detected! Size: {face_size}px, Proximity: {proximity:.2f}")
+
+        if proximity >= 0.8:
             face_img = gray[y:y+h, x:x+w]
             is_authorized = is_you(face_img)
-            
+
             person_name = "William" if is_authorized else "Unknown"
             print(f"OpenCV recognition: {person_name} - {'AUTHORIZED' if is_authorized else 'UNAUTHORIZED'}")
         else:
@@ -79,7 +83,7 @@ while True:
         proximity = 0.0
         is_authorized = False
         person_name = "None" if len(faces) == 0 else "Unknown"
-    
+
     # Send directly to C# via socket
     send_to_csharp(proximity, is_authorized, person_name, len(faces))
     
