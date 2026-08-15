@@ -188,31 +188,20 @@ namespace SmartLockSystem
         public void Update()
         {
             SystemState state = _inputProvider.GetCurrentState();
-            
-            Console.WriteLine($"[DEBUG] Proximity: {state.Proximity:P0}, FaceCount: {state.FaceCount}, PersonName: {state.PersonName}, IsAuthorized: {state.IsAuthorized}");
-            
-            if (Math.Abs(state.Proximity - _lastProximity) > 0.05)
+
+            Console.WriteLine($"[DEBUG] Proximity: {state.Proximity:F2}, FaceCount: {state.FaceCount}, PersonName: {state.PersonName}, IsAuthorized: {state.IsAuthorized}");
+
+            if (state.IsAuthorized && state.FaceCount > 0)
             {
-                if (state.Proximity >= 0.8 && state.FaceCount > 0)
-                {
-                    Console.WriteLine($"[VISION] Face detected: {state.PersonName}");
-                    
-                    if (state.IsAuthorized)
-                    {
-                        Console.WriteLine("[SYSTEM] Access granted - Unlocking");
-                        var rule = _rules.FirstOrDefault(r => r.TriggerValue == 73);
-                        rule?.Action.Execute();
-                    }
-                    else
-                    {
-                        Console.WriteLine("[SYSTEM] Access denied - Lock remains engaged");
-                    }
-                }
-                else if (state.Proximity > 0.3 && state.Proximity < 0.8)
-                {
-                    Console.WriteLine("[VISION] Face detected but too far for recognition");
-                }
-                _lastProximity = state.Proximity;
+                Console.WriteLine($"[SYSTEM] Authorized face detected: {state.PersonName} - UNLOCKING");
+                var unlockRule = _rules.FirstOrDefault(r => r.TriggerValue == 73);
+                unlockRule?.Action.Execute();
+            }
+            else if (state.FaceCount > 0)
+            {
+                Console.WriteLine($"[SYSTEM] Unauthorized face detected - LOCKING");
+                var lockRule = _rules.FirstOrDefault(r => r.TriggerValue == -1);
+                lockRule?.Action.Execute();
             }
         }
     }
