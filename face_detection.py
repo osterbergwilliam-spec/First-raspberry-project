@@ -44,7 +44,7 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
-    if faces:
+    if len(faces) > 0:
         x, y, w, h = faces[0]  # Use first face
         face_img = gray[y:y+h, x:x+w]
         proximity = calculate_proximity(w, frame.shape[1])

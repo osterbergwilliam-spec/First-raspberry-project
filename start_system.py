@@ -1,17 +1,48 @@
 import subprocess
 import time
 import threading
+import signal
+import sys
+
+# Global flag for shutdown
+shutdown_flag = False
+
+def handle_shutdown(signum, frame):
+    global shutdown_flag
+    shutdown_flag = True
+    print("\nShutting down gracefully...")
+    sys.exit(0)
 
 # Start face detection in background
 def start_detection():
-    subprocess.run(["python3", "face_detection.py"])
+    global shutdown_flag
+    process = subprocess.Popen(["python3", "face_detection.py"])
+    
+    while not shutdown_flag:
+        time.sleep(1)
+        if process.poll() is not None:
+            print("Face detection process ended")
+            break
+    
+    process.terminate()
 
 # Start C# smart lock system
 def start_lock_system():
-    subprocess.run(["dotnet", "run"])
+    global shutdown_flag
+    process = subprocess.Popen(["dotnet", "run"])
+    
+    while not shutdown_flag:
+        time.sleep(1)
+        if process.poll() is not None:
+            print("Lock system process ended")
+            break
+    
+    process.terminate()
 
 # Run both in parallel
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle_shutdown)
+    
     print("Starting smart lock system...")
     
     # Start face detection
