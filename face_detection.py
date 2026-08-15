@@ -21,6 +21,12 @@ def recognize_face(face_img, known_faces):
         return -1
     return person_id
 
+def calculate_proximity(face_width, frame_width):
+    # Approximate distance based on face size
+    # Closer face = larger width = higher proximity
+    proximity = min(face_width / frame_width * 2, 1.0)
+    return proximity
+
 # Load known faces
 known_faces = {}
 if os.path.exists("faces/William/73.jpg"):
@@ -41,19 +47,21 @@ while True:
     if faces:
         x, y, w, h = faces[0]  # Use first face
         face_img = gray[y:y+h, x:x+w]
+        proximity = calculate_proximity(w, frame.shape[1])
         
         # Try to recognize
         person_id = recognize_face(face_img, known_faces)
         is_authorized = (person_id == 73)
         person_name = "William" if is_authorized else "Unknown"
     else:
+        proximity = 0.0
         person_id = -1
         is_authorized = False
         person_name = "None"
     
     # Send data to C#
     data = {
-        "Proximity": 0.9 if faces else 0.0,
+        "Proximity": proximity,
         "Value": person_id,
         "FaceCount": len(faces),
         "PersonName": person_name,
