@@ -33,23 +33,25 @@ def is_you(face_img):
     
     return diff_mean < 50
 
-# Try both video devices
-camera_devices = ["/dev/video0", "/dev/video1"]
+# Try a few common Raspberry Pi/USB camera device paths.
+# If no camera is connected yet, keep retrying instead of exiting immediately.
+camera_devices = ["/dev/video0", "/dev/video1", "/dev/video2", "/dev/video10"]
 cap = None
 
-for device in camera_devices:
-    candidate = cv2.VideoCapture(device, cv2.CAP_V4L2)
-    if candidate.isOpened():
-        cap = candidate
-        print(f"Camera opened with device: {device}")
-        break
+while cap is None or not cap.isOpened():
+    for device in camera_devices:
+        candidate = cv2.VideoCapture(device, cv2.CAP_V4L2)
+        if candidate.isOpened():
+            cap = candidate
+            print(f"Camera opened with device: {device}")
+            break
 
-    candidate.release()
-    print(f"Could not open camera device: {device}")
+        candidate.release()
+        print(f"Could not open camera device: {device}")
 
-if cap is None or not cap.isOpened():
-    print("No camera detected. Please check permissions and camera connection.")
-    sys.exit(1)
+    if cap is None or not cap.isOpened():
+        print("No camera detected. Please check permissions and camera connection. Retrying in 5 seconds...")
+        time.sleep(5)
 
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 

@@ -23,7 +23,7 @@ def start_detection():
     while not shutdown_flag:
         time.sleep(1)
         if process.poll() is not None:
-            print("Face detection process ended")
+            print("Face detection process ended. Camera may be unavailable or disconnected.")
             break
 
     if process.poll() is None:
@@ -51,7 +51,7 @@ def start_streaming():
         "-f", "v4l2",
         "-i", "/dev/video0",
         "-f", "flv",
-        "rtmp://localhost:1935/live/stream",
+        "rtmp://192.168.1.40:1935/live/stream",
     ]
 
     process = subprocess.Popen(stream_cmd)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     print("Face detection: Running")
     print("Smart lock system: Running")
     print("Camera streaming: Running")
-    print("In OBS: Add Media Source -> RTMP -> rtmp://YOUR_PI_IP:1935/live/stream")
+    print("In OBS: Add Media Source -> RTMP -> rtmp://192.168.1.40:1935/live/stream")
 
     while (
         not shutdown_flag
