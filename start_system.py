@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 import subprocess
 import time
 import threading
 import signal
 import sys
 import socket
+import os
 
 # Global flag for shutdown
 shutdown_flag = False
@@ -19,7 +21,6 @@ def handle_shutdown(signum, frame):
 def start_detection():
     global shutdown_flag
     process = subprocess.Popen(["python3", "face_detection.py"])
-
     while not shutdown_flag:
         time.sleep(1)
         if process.poll() is not None:
@@ -44,6 +45,39 @@ def start_lock_system():
         process.terminate()
 
 
+def start_streaming():
+    global shutdown_flag
+    pc_ip = os.environ.get("OBS_PC_IP", "192.168.1.40")  # Change to the IP used by your PC for OBS streaming
+
+    if pc_ip == "192.168.1.40":
+        print("[STREAM] Set OBS_PC_IP to your PC IP address before streaming.")
+        print("[STREAM] Example: OBS_PC_IP=192.168.1.40 python3 start_system.py")
+
+    stream_cmd = [
+        "ffmpeg",
+        "-f", "v4l2",
+        "-i", "/dev/video0",
+        "-f", "mpegts",
+        "-c:v", "mpeg1video",
+        "-s", "640x480",
+        "-b:v", "1000k",
+        "-bf", "0",
+        "-muxdelay", "0.001",
+        f"http://{pc_ip}:8080",
+    ]
+
+    process = subprocess.Popen(stream_cmd)
+
+    while not shutdown_flag:
+        time.sleep(1)
+        if process.poll() is not None:
+            print("Streaming process ended")
+            break
+
+    if process.poll() is None:
+        process.terminate()
+
+
 def wait_for_lock_socket(host="127.0.0.1", port=9999, timeout=30):
     deadline = time.time() + timeout
 
@@ -60,7 +94,7 @@ def wait_for_lock_socket(host="127.0.0.1", port=9999, timeout=30):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_shutdown)
 
-    print("Starting smart lock system...")
+    print("Starting smart lock system with camera streaming...")
 
     lock_thread = threading.Thread(target=start_lock_system)
     lock_thread.daemon = True
@@ -76,5 +110,19 @@ if __name__ == "__main__":
     detection_thread.daemon = True
     detection_thread.start()
 
-    while not shutdown_flag and lock_thread.is_alive() and detection_thread.is_alive():
+    streaming_thread = threading.Thread(target=start_streaming)
+    streaming_thread.daemon = True
+    streaming_thread.start()
+
+    print("All systems started!")
+    print("Face detection: Running")
+    print("Smart lock system: Running")
+    print(f"Camera streaming: Running (check {os.environ.get('OBS_PC_IP', 'YOUR_PC_IP')}:8080 in OBS)")
+
+    while (
+        not shutdown_flag
+        and lock_thread.is_alive()
+        and detection_thread.is_alive()
+        and streaming_thread.is_alive()
+    ):
         time.sleep(1)
