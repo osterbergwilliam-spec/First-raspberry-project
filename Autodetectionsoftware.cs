@@ -121,8 +121,8 @@ namespace SmartLockSystem
         private readonly List<LockRule> _rules = new List<LockRule>();
         
         // CONFIGURATION FOR VISION SIMULATION
-        private const double ScanThreshold = 0.8;  // Must be 80% close to trigger scan
-        private const double PresenceThreshold = 0.3; // Anything above 30% is "someone is there"
+        private const double ScanThreshold = 0.8;  // Very close
+        private const double PresenceThreshold = 0.3;  // Someone is there
 
         private double _lastProximity = -1.0;
         private double _lastValue = double.NaN;
