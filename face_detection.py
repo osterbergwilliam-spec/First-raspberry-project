@@ -1,24 +1,35 @@
 import cv2
-import face_recognition
-import socket
 import json
 import time
 import os
+import socket
+import numpy as np
 
 # Load your reference face
 reference_face_path = "faces/your_face.jpg"
-known_image = None
-known_encoding = None
+reference_face = None
 
 if os.path.exists(reference_face_path):
-    known_image = face_recognition.load_image_file(reference_face_path)
-    known_encoding = face_recognition.face_encodings(known_image)[0]
-    print("[AI] Reference face loaded for AI recognition")
-else:
-    print("[WARNING] Reference face not found at", reference_face_path)
+    reference_face = cv2.imread(reference_face_path, cv2.IMREAD_GRAYSCALE)
+    print("Reference face loaded for OpenCV recognition")
+
+def is_you(face_img):
+    if reference_face is None:
+        return False
+    
+    # Resize to match reference
+    face_img = cv2.resize(face_img, (reference_face.shape[1], reference_face.shape[0]))
+    
+    # Simple comparison
+    diff = cv2.absdiff(reference_face, face_img)
+    diff_mean = np.mean(diff)
+    
+    print(f"Face match score: {diff_mean} (lower is better)")
+    return diff_mean < 50
 
 # Initialize camera
 cap = cv2.VideoCapture(0)
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 # Function to send data directly to C# via socket
 def send_to_csharp(proximity, is_authorized, person_name, face_count):
@@ -33,53 +44,43 @@ def send_to_csharp(proximity, is_authorized, person_name, face_count):
                 "IsAuthorized": is_authorized
             }
             s.sendall(json.dumps(data).encode())
-            print(f"[SOCKET] Data sent: {person_name} - Authorized: {is_authorized}")
-            return True
-    except Exception as e:
-        print(f"[ERROR] Socket connection failed: {e}")
+        return True
+    except:
         return False
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("[ERROR] Failed to capture frame")
         time.sleep(1)
         continue
     
-    # Convert for face_recognition library
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
-    # Find faces using AI
-    face_locations = face_recognition.face_locations(rgb_frame)
-    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-    
-    if face_locations and known_encoding is not None:
+    if faces and reference_face is not None:
         # Get first face
-        top, right, bottom, left = face_locations[0]
+        x, y, w, h = faces[0]
         
         # Calculate proximity based on face size
-        face_width = right - left
+        face_width = w
         frame_width = frame.shape[1]
         proximity = min(face_width / frame_width * 2, 1.0)
         
         if proximity >= 0.8:  # Close enough for recognition
-            # Compare faces using AI
-            matches = face_recognition.compare_faces([known_encoding], face_encodings[0])
-            is_authorized = matches[0]
+            face_img = gray[y:y+h, x:x+w]
+            is_authorized = is_you(face_img)
             
             person_name = "William" if is_authorized else "Unknown"
-            print(f"[AI] Face recognized: {person_name} - {'AUTHORIZED' if is_authorized else 'UNAUTHORIZED'}")
+            print(f"OpenCV recognition: {person_name} - {'AUTHORIZED' if is_authorized else 'UNAUTHORIZED'}")
         else:
             is_authorized = False
             person_name = "Too far for recognition"
-            print(f"[AI] Face too far away - Proximity: {proximity:.2f}")
     else:
         proximity = 0.0
         is_authorized = False
-        person_name = "None" if not face_locations else "Unknown"
-        print(f"[AI] No faces detected")
+        person_name = "None" if not faces else "Unknown"
     
     # Send directly to C# via socket
-    send_to_csharp(proximity, is_authorized, person_name, len(face_locations))
+    send_to_csharp(proximity, is_authorized, person_name, len(faces))
     
     time.sleep(1)
