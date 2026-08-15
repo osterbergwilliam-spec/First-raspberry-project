@@ -126,6 +126,35 @@ namespace SmartLockSystem
         }
     }
 
+
+    // ==========================================
+    // FACE RECOGNITION SERVICE
+    // ==========================================
+    public class FaceRecognitionService
+    {
+        private readonly Dictionary<int, string> _knownFaces = new Dictionary<int, string>
+        {
+            { 73, "William" },    // Authorized person
+            { -1, "Unknown" }     // Unknown person
+        };
+
+        public string RecognizeFace(SystemState state)
+        {
+            if (state.FaceCount == 0)
+                return "No face detected";
+
+            if (state.FaceCount > 1)
+                return "Multiple faces detected";
+
+            return _knownFaces.ContainsKey((int)state.Value) ? _knownFaces[(int)state.Value] : "Unknown";
+        }
+
+        public bool IsAuthorized(string person)
+        {
+            return person == "William";
+        }
+    }
+
     // ==========================================
     // RULE ENGINE (The Brain)
     // ==========================================
@@ -138,6 +167,7 @@ namespace SmartLockSystem
     public class LockManager
     {
         private readonly IInputProvider _inputProvider;
+        private readonly FaceRecognitionService _faceService;
         private readonly List<LockRule> _rules = new List<LockRule>();
         
         // CONFIGURATION FOR VISION SIMULATION
@@ -146,9 +176,10 @@ namespace SmartLockSystem
 
         private double _lastProximity = -1.0;
 
-        public LockManager(IInputProvider inputProvider)
+        public LockManager(IInputProvider inputProvider, FaceRecognitionService faceService)
         {
             _inputProvider = inputProvider;
+            _faceService = faceService;
         }
 
         public void AddRule(double value, ILockAction action) 
@@ -193,21 +224,24 @@ namespace SmartLockSystem
     {
         static void Main(string[] args)
         {
-            // Use socket provider instead of JSON file
+            // Use socket communication only
             IInputProvider inputSource = new SocketInputProvider(9999);
-            LockManager brain = new LockManager(inputSource);
-
+            Console.WriteLine("[SYSTEM] Using socket communication with AI recognition");
+            
+            FaceRecognitionService faceService = new FaceRecognitionService();
+            LockManager brain = new LockManager(inputSource, faceService);
+            
             // Define rules
             brain.AddRule(73, new SimulatedAction("UNLOCK", "Deadbolt Disengaged"));
             brain.AddRule(-1, new SimulatedAction("LOCK", "Deadbolt Engaged"));
-
+            
             Console.WriteLine("Smart Lock System Online.");
             Console.WriteLine("--------------------------------------------");
-
+            
             while (true)
             {
                 brain.Update();
-                Thread.Sleep(1000); // Update every second
+                Thread.Sleep(1000);
             }
         }
     }
