@@ -108,8 +108,7 @@ namespace SmartLockSystem
         {
             SystemState state = _inputProvider.GetCurrentState();
             
-            // Debug output - remove later
-            Console.WriteLine($"[DEBUG] Proximity: {state.Proximity}, FaceCount: {state.FaceCount}, PersonName: {state.PersonName}");
+            Console.WriteLine($"[DEBUG] Proximity: {state.Proximity:P0}, FaceCount: {state.FaceCount}, PersonName: {state.PersonName}, IsAuthorized: {state.IsAuthorized}");
             
             if (Math.Abs(state.Proximity - _lastProximity) > 0.05)
             {
@@ -127,6 +126,10 @@ namespace SmartLockSystem
                     {
                         Console.WriteLine("[SYSTEM] Access denied - Lock remains engaged");
                     }
+                }
+                else if (state.Proximity > 0.3 && state.Proximity < 0.8)
+                {
+                    Console.WriteLine("[VISION] Face detected but too far for recognition");
                 }
                 _lastProximity = state.Proximity;
             }

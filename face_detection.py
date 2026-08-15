@@ -4,35 +4,26 @@ import time
 import os
 import numpy as np
 
-# Simple face recognition
-def recognize_face(face_img, known_faces):
-    min_dist = float('inf')
-    person_id = -1
+# Load your reference face
+reference_face = None
+if os.path.exists("faces/your_face.jpg"):
+    reference_face = cv2.imread("faces/your_face.jpg", cv2.IMREAD_GRAYSCALE)
+    print("Reference face loaded")
+
+def is_you(face_img):
+    if reference_face is None:
+        return False
     
-    for id, reference_img in known_faces.items():
-        # Simple comparison - in production use proper face recognition
-        dist = np.linalg.norm(face_img - reference_img)
-        if dist < min_dist:
-            min_dist = dist
-            person_id = id
+    # Resize to match reference
+    face_img = cv2.resize(face_img, (reference_face.shape[1], reference_face.shape[0]))
     
-    # If distance is too large, it's unknown
-    if min_dist > 100:
-        return -1
-    return person_id
+    # Simple comparison
+    diff = cv2.absdiff(reference_face, face_img)
+    diff_mean = np.mean(diff)
+    
+    print(f"Face match score: {diff_mean} (lower is better)")
+    return diff_mean < 50
 
-def calculate_proximity(face_width, frame_width):
-    # Approximate distance based on face size
-    # Closer face = larger width = higher proximity
-    proximity = min(face_width / frame_width * 2, 1.0)
-    return proximity
-
-# Load known faces
-known_faces = {}
-if os.path.exists("faces/William/73.jpg"):
-    known_faces[73] = cv2.imread("faces/William/73.jpg", cv2.IMREAD_GRAYSCALE)
-
-# Your existing detection code
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 cap = cv2.VideoCapture(0)
 
@@ -45,23 +36,33 @@ while True:
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
     if len(faces) > 0:
-        print(f"[FACE DETECTION] Face(s) detected! Count: {len(faces)}")
-        x, y, w, h = faces[0]  # Use first face
-        face_img = gray[y:y+h, x:x+w]
-        proximity = calculate_proximity(w, frame.shape[1])
+        x, y, w, h = faces[0]
         
-        # Try to recognize
-        person_id = recognize_face(face_img, known_faces)
-        is_authorized = (person_id == 73)
-        person_name = "William" if is_authorized else "Unknown"
+        # Calculate distance based on face width
+        face_width = w
+        frame_width = frame.shape[1]
+        proximity = min(face_width / frame_width * 2, 1.0)
+        
+        print(f"Face detected! Proximity: {proximity:.2f} (width: {face_width}px)")
+        
+        if proximity < 0.3:
+            print("Too far away for recognition")
+        
+        if proximity >= 0.8 and reference_face is not None:
+            face_img = gray[y:y+h, x:x+w]
+            is_authorized = is_you(face_img)
+            person_name = "William" if is_authorized else "Unknown"
+            person_id = 73 if is_authorized else -1
+        else:
+            is_authorized = False
+            person_name = "Unknown" if proximity >= 0.3 else "Too far"
+            person_id = -1
     else:
-        print("[FACE DETECTION] No faces detected")
         proximity = 0.0
-        person_id = -1
         is_authorized = False
         person_name = "None"
+        person_id = -1
     
-    # Send data to C#
     data = {
         "Proximity": proximity,
         "Value": person_id,
